@@ -134,3 +134,106 @@ pkg
     - store
         - store.go
 ```
+
+### Condition Pipe
+The condition pipe allows you to chain query operators together to create a MongoDB query without having to deal with 
+the bson library directly. Here's an example, refer to the source code (documented) for additional operators:
+
+```go
+condition := Pipe(
+    DateLessThanOrEqualTo(Condition{
+        Key:   "endDate",
+        Value: "2006-01-02T15:04:05.000Z",
+    }),
+    DateGreaterThanOrEqualTo(Condition{
+        Key:   "startDate",
+        Value: "2006-01-02T15:04:05.000Z",
+    }),
+)
+```
+
+This outputs the following:
+```json
+{
+    "endDate": {
+        "$lte": "2006-01-02T15:04:05Z"
+    },
+    "startDate": {
+        "$gte": "2006-01-02T15:04:05Z"
+    }
+}
+```
+
+Note that condition pipes can be put inside aggregate operators such as the `Match` operator (see below).
+
+### Aggregate Pipe
+The aggregate pipe allows you to chain operators together in order to create a MongoDB pipeline without having to deal with
+the bson library directly. Here's an example, refer to the source code (documented) for additional operators:
+
+```go
+pipeline := Pipe(
+    Match(
+        Operation(
+            condition.Pipe(
+                condition.ObjectIdMatch(condition.Condition{
+                    Key:   "_id",
+                    Value: "5c7836b73a8de34c78fec399"}),
+                condition.EqualTo(condition.Condition{
+                    Key:   "status",
+                    Value: 1,
+                }),
+                condition.StringStartsWith(condition.Condition{
+                    Key:   "model",
+                    Value: "T654",
+                }),
+            ),
+        ),
+    ),
+    Project(
+        Operation{
+            "name":  1,
+            "make":  1,
+            "model": 1,
+        },
+    ),
+)
+```
+
+This outputs the following:
+
+```json
+[
+    {
+        "$match": {
+            "_id": {
+                "$eq": "5c7836b73a8de34c78fec399"
+            },
+            "model": {
+                "$regex": {
+                    "Pattern": "^T654",
+                    "Options": "i"
+                }
+            },
+            "status": {
+                "$eq": 1
+            }
+        }
+    },
+    {
+        "$project": {
+            "make": 1,
+            "model": 1,
+            "name": 1
+        }
+    }
+]
+```
+
+The following operators are currently supported with more in development:
+* Match
+* Unwind
+* Project
+* Lookup
+* Sort
+* Limit
+* Skip
