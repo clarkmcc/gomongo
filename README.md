@@ -7,6 +7,10 @@ different packages:
 3. Condition - Contains a `Pipe` function and all the operators to construct a MongoDB query without dealing with `bson` types. 
 4. Util - Contains handy functions like printing an interface to json to verify that your pipelines and queries look the way they should.
 
+### Install
+```bash
+$ go get github.com/clarkmcc/gomongo
+```
 ---
 ### Repositories
 A repository represents a collection of methods that are called and executed on a specific collection, in other words you'll always 
