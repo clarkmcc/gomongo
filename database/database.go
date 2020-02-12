@@ -112,6 +112,9 @@ func (r *BaseRepository) FindOne(ctx context.Context, query interface{}, rtn int
 	c := r.Database.Collection(r.CollectionName).FindOne(ctx, query)
 
 	err := c.Decode(rtn)
+	if err != nil && err == mongo.ErrNoDocuments {
+		return nil
+	}
 	if err != nil {
 		return fmt.Errorf("BaseRepository.FindOne - c.All: %v", err)
 	}
