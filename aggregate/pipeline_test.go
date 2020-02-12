@@ -3,11 +3,12 @@ package aggregate
 import (
 	"github.com/clarkmcc/gomongo/condition"
 	"github.com/clarkmcc/gomongo/util"
+	"go.mongodb.org/mongo-driver/bson"
 	"testing"
 )
 
 func TestPipe(t *testing.T) {
-	pipeline := Pipe(
+	pipeline := Pipe(bson.A{},
 		Match(Operation(
 			condition.Pipe(
 				condition.ObjectIdMatch(condition.Condition{

@@ -10,12 +10,9 @@ type Operation bson.M
 // as its input, the output of the previous function. The allows you
 // to chain together functions that have the same bson.A signature
 // and create elaborate aggregate pipelines that get injected into
-// the MongoDB driver
-func Pipe(steps ...func(bson.A) bson.A) bson.A {
-	// Initialize an empty pipeline to start with, eventually we'll
-	// want to be able to specify th pipeline to qstart with similar
-	// to how RxJS handles this 'const pipe = pipe(...)([])'
-	pipeline := bson.A{}
+// the MongoDB driver. The Pipe function accepts an initial state as
+// its first parameter.
+func Pipe(pipeline bson.A, steps ...func(bson.A) bson.A) bson.A {
 	for _, step := range steps {
 		// Iterate through each step and call each step passing in
 		// the current state of the pipeline. Set the new state of
