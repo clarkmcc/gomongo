@@ -57,11 +57,29 @@ func Unwind(fields Operation) func(bson.A) bson.A {
 	}
 }
 
+// The UnwindSingle function builds the $unwind operator into a pipeline
+func UnwindSingle(field string) func(bson.A) bson.A {
+	return func(pipeline bson.A) bson.A {
+		return append(pipeline, bson.M{
+			"$unwind": field,
+		})
+	}
+}
+
 // The Project function builds the $project operator into a pipeline
 func Project(fields Operation) func(bson.A) bson.A {
 	return func(pipeline bson.A) bson.A {
 		return append(pipeline, bson.M{
 			"$project": fields,
+		})
+	}
+}
+
+// The Project function builds the $project operator into a pipeline
+func ReplaceRoot(fields Operation) func(bson.A) bson.A {
+	return func(pipeline bson.A) bson.A {
+		return append(pipeline, bson.M{
+			"$replaceRoot": fields,
 		})
 	}
 }
