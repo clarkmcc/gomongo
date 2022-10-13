@@ -1,18 +1,65 @@
 # gomongo
 A handy wrapper for working with the standard mongo-go-driver. This package lets you avoid a lot of the `bson.M`s and the `bson.D`s and 
-all the other fun things about working with a language that doesn't deal with JSON natively. The package is divided up into several 
-different packages:
-1. Database - Contains the `BaseRepository`
-2. Aggregate - Contains a `Pipe` function and all the operators to construct MongoDB aggregate pipelines without dealing with `bson` types.
-3. Condition - Contains a `Pipe` function and all the operators to construct a MongoDB query without dealing with `bson` types. 
-4. Util - Contains handy functions like printing an interface to json to verify that your pipelines and queries look the way they should.
+all the other fun things about working with a language that doesn't deal with JSON natively.
 
-### Install
+* [Query Builder](#query-builder)
+* [Repository](#repositories)
+* [Condition Pipe](#condition-pipe) (deprecated in favor of query builder)
+* [Aggregate Pipe](#aggregate-pipe) (deprecated in favor of query builder)
+
+## Install
 ```bash
 $ go get github.com/clarkmcc/gomongo
 ```
 ---
-### Repositories
+## Query Builder
+This library was originally introduced with condition builders that allowed callers to more easily build queries and pipelines using functions rather than figuring out how to use the `bson` types. This however was not an appreciable improvement over the user experience of the `bson` package. I've now added a Go template based query builder that allows you to build queries in JSON form and then insert Go template variables dynamically.
+
+### Example
+
+**JSON**
+```json
+{
+	"$match": {
+		"_id": ObjectId("000000000000000000000000")
+	}
+}
+```
+**BSON**
+```go
+key, err := primitive.ObjectIdFromHex("000000000000000000000000")
+if err != nil {
+	panic(err)
+}
+q := bson.M{"$match": bson.M{
+	"_id": key
+}}
+```
+**Query Builder**
+```go
+q, err := qb.Build[bson.M](`{"$match": {"_id": {{ oid .id }}}}`, map[string]any{
+	"id": "000000000000000000000000",
+})
+```
+
+### Regular Expressions
+You can also use the query builder to write queries using regular expressions.
+```go
+q, err := qb.Build[bson.M](`{"$match": {"name": {{ regex .name }}}}`, map[string]any{
+    "name": "/john|jane/i",
+})
+```
+
+### Custom Template Functions
+The template function map is exposed so that the behavior of existing functions like `oid` and `regex` can be overridden or new functions created
+```go
+qb.Builtins["foobar"] = func(value reflect.Value) (any, error) {
+    // Do something...
+    return nil, nil
+}
+```
+
+## Repositories
 A repository represents a collection of methods that are called and executed on a specific collection, in other words you'll always 
 have one repository per collection. The BaseRepository has a bunch of standard helper methods and is used by embedding it into our own 
 custom repositories. 
@@ -87,59 +134,7 @@ In this case the decoding into a struct is handled in a repository and calling t
 user, err := FindUserById(ctx, "5c7836b73a8de34c78fec399")
 ```
 
-### Store
-Store functionality is not included in this package yet but can be implemented easily. A store allows you to share a 
-single MongoDB client between multiple repositories.
-
-```go
-type Store struct {
-	Client                     *mongo.Client
-	UserRepository             *UserRepository
-}
-```
-
-Add a `NewStore` method to initilize a store with a `mongo.Client`:
-
-```go
-func NewStore(ctx context.Context, uri string) (*Store, error) {
-	// create a new MongoDB client
-	client, err := mongo.NewClient(options.Client().ApplyURI(uri))
-	if err != nil {
-		return nil, fmt.Errorf("creating mongodb client: %v", err)
-	}
-
-	// connect to MongoDB client
-	err = client.Connect(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("connecting to mongodb: %v", err)
-	}
-
-	return &Store{
-		Client:                     client,
-		UserRepository:             NewUserRepository(client),
-	}, nil
-}
-```
-
-Then it's just a matter of accessing the store and all the repositories in the store like this:
-
-```go
-store, err := NewStore(ctx, "localhost:27017")
-...
-store.UserRepository.FindUserById("5c7836b73a8de34c78fec399")
-```
-
-### Suggested Folder Structure
-This is completely up to the developer, one option for projects that don't already have these package names is:
-```bash
-pkg
-    - repositories
-        - user.go
-    - store
-        - store.go
-```
-
-### Condition Pipe
+## Condition Pipe
 The condition pipe allows you to chain query operators together to create a MongoDB query without having to deal with 
 the bson library directly. Here's an example, refer to the source code (documented) for additional operators:
 
@@ -170,7 +165,7 @@ This outputs the following:
 
 Note that condition pipes can be put inside aggregate operators such as the `Match` operator (see below).
 
-### Aggregate Pipe
+## Aggregate Pipe
 The aggregate pipe allows you to chain operators together in order to create a MongoDB pipeline without having to deal with
 the bson library directly. Here's an example, refer to the source code (documented) for additional operators:
 

@@ -1,0 +1,12 @@
+{
+	"$match": {
+		"$or": [
+			{
+				"_id": {{ oid .id }}
+			},
+			{
+				"name": {{ regex .name }}
+			}
+		]
+	}
+}
